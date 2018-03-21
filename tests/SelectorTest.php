@@ -3,8 +3,9 @@
 use PHPHtmlParser\Selector;
 use PHPHtmlParser\Dom\HtmlNode;
 use PHPHtmlParser\Dom\Tag;
+use PHPUnit\Framework\TestCase;
 
-class SelectorTest extends PHPUnit_Framework_TestCase {
+class SelectorTest extends TestCase {
     
     public function testParseSelectorStringId()
     {
@@ -201,6 +202,17 @@ class SelectorTest extends PHPUnit_Framework_TestCase {
         $parent->addChild($child2);
 
         $selector = new Selector('div > ul');
+        $this->assertEquals(1, count($selector->find($root)));
+    }
+
+    public function testFindNodeByAttributeOnly()
+    {
+        $root   = new HtmlNode(new Tag('root'));
+        $child1 = new HtmlNode(new Tag('ul'));
+        $child1->setAttribute('custom-attr', null);
+        $root->addChild($child1);
+
+        $selector = new Selector('[custom-attr]');
         $this->assertEquals(1, count($selector->find($root)));
     }
 }

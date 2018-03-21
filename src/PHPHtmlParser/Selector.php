@@ -6,6 +6,7 @@ use PHPHtmlParser\Dom\Collection;
 use PHPHtmlParser\Dom\InnerNode;
 use PHPHtmlParser\Dom\LeafNode;
 use PHPHtmlParser\Exceptions\ChildNotFoundException;
+use Countable;
 
 /**
  * Class Selector
@@ -168,7 +169,9 @@ class Selector
     protected function seek(array $nodes, array $rule, array $options)
     {
         // XPath index
-        if (count($rule['tag']) > 0 &&
+        if ($rule['tag'] instanceof Countable && 
+            count($rule['tag']) > 0 &&
+            $rule['key'] instanceof Countable &&
             count($rule['key']) > 0 &&
             is_numeric($rule['key'])
         ) {
@@ -232,9 +235,7 @@ class Selector
                             $pass = false;
                         }
                     } else {
-                        if ($rule['key'] != 'plaintext' &&
-                            is_null($child->getAttribute($rule['key']))
-                        ) {
+                        if ($rule['key'] != 'plaintext' && !$child->hasAttribute($rule['key'])) {
                             $pass = false;
                         }
                     }

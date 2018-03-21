@@ -1,8 +1,9 @@
 <?php
 
 use PHPHtmlParser\StaticDom;
+use PHPUnit\Framework\TestCase;
 
-class StaticDomTest extends PHPUnit_Framework_TestCase {
+class StaticDomTest extends TestCase {
 
     public function setUp()
     {
@@ -41,12 +42,6 @@ class StaticDomTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals('VonBurgermeister', $dom->find('.post-user font', 0)->text);
     }
 
-    public function testFind()
-    {
-        Dom::load('tests/files/horrible.html');
-        $this->assertEquals('<input type="submit" tabindex="0" name="submit" value="Информации" />', Dom::find('table input', 1)->outerHtml);
-    }
-
     /**
      * @expectedException PHPHtmlParser\Exceptions\NotLoadedException
      */
@@ -57,8 +52,8 @@ class StaticDomTest extends PHPUnit_Framework_TestCase {
 
     public function testFindI()
     {
-        Dom::load('tests/files/horrible.html');
-        $this->assertEquals('[ Досие бр:12928 ]', Dom::find('i')[0]->innerHtml);
+        Dom::load('tests/files/big.html');
+        $this->assertEquals('В кустах блестит металл<br /> И искрится ток<br /> Человечеству конец', Dom::find('i')[1]->innerHtml);
     }
 
     public function testLoadFromUrl()

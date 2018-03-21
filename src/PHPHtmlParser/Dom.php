@@ -79,16 +79,31 @@ class Dom
      * @var array
      */
     protected $selfClosing = [
-        'img',
-        'br',
-        'input',
-        'meta',
-        'link',
-        'hr',
+        'area',
         'base',
+        'basefont',
+        'br',
+        'col',
         'embed',
+        'hr',
+        'img',
+        'input',
+        'keygen',
+        'link',
+        'meta',
+        'param',
+        'source',
         'spacer',
+        'track',
+        'wbr'
     ];
+
+    /**
+     * A list of tags where there should be no /> at the end (html5 style)
+     *
+     * @var array
+     */
+    protected $noSlash = [];
 
     /**
      * Returns the inner html of the root node.
@@ -120,6 +135,7 @@ class Dom
      */
     public function load($str, $options = [])
     {
+        AbstractNode::resetCount();
         // check if it's a file
         if (strpos($str, "\n") === false && is_file($str)) {
             return $this->loadFromFile($str, $options);
@@ -220,6 +236,20 @@ class Dom
     }
 
     /**
+     * Find element by Id on the root node
+     *
+     * @param int $id Element Id
+     * @return mixed
+     *
+     */
+    public function findById($id)
+    {
+        $this->isLoaded();
+
+        return $this->root->findById($id);
+    }
+
+    /**
      * Adds the tag (or tags in an array) to the list of tags that will always
      * be self closing.
      *
@@ -267,6 +297,53 @@ class Dom
         return $this;
     }
 
+
+    /**
+     * Adds a tag to the list of self closing tags that should not have a trailing slash
+     *
+     * @param $tag
+     * @return $this
+     */
+    public function addNoSlashTag($tag)
+    {
+        if ( ! is_array($tag)) {
+            $tag = [$tag];
+        }
+        foreach ($tag as $value) {
+            $this->noSlash[] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Removes a tag from the list of no-slash tags.
+     *
+     * @param $tag
+     * @return $this
+     */
+    public function removeNoSlashTag($tag)
+    {
+        if ( ! is_array($tag)) {
+            $tag = [$tag];
+        }
+        $this->noSlash = array_diff($this->noSlash, $tag);
+
+        return $this;
+    }
+
+    /**
+     * Empties the list of no-slash tags.
+     *
+     * @return $this
+     */
+    public function clearNoSlashTags()
+    {
+        $this->noSlash = [];
+
+        return $this;
+    }
+
     /**
      * Simple wrapper function that returns the first child.
      *
@@ -289,6 +366,42 @@ class Dom
         $this->isLoaded();
 
         return $this->root->lastChild();
+    }
+
+    /**
+     * Simple wrapper function that returns count of child elements
+     *
+     * @return int
+     */
+    public function countChildren()
+    {
+        $this->isLoaded();
+
+        return $this->root->countChildren();
+    }
+
+    /**
+     * Get array of children
+     *
+     * @return array
+     */
+    public function getChildren()
+    {
+        $this->isLoaded();
+
+        return $this->root->getChildren();
+    }
+
+    /**
+     * Check if node have children nodes
+     *
+     * @return bool
+     */
+    public function hasChildren()
+    {
+        $this->isLoaded();
+
+        return $this->root->hasChildren();
     }
 
     /**
@@ -357,45 +470,35 @@ class Dom
             // skip entire cleanup step
             return $str;
         }
-
         // remove white space before closing tags
-        $str = mb_eregi_replace("'\s+>", "'>", $str);
-        $str = mb_eregi_replace('"\s+>', '">', $str);
-
+        $str = preg_replace("#'\s+>#i", "'>", $str);
+        $str = preg_replace('#"\s+>#i', '">', $str);
         // clean out the \n\r
         $replace = ' ';
         if ($this->options->get('preserveLineBreaks')) {
             $replace = '&#10;';
         }
         $str = str_replace(["\r\n", "\r", "\n"], $replace, $str);
-
         // strip the doctype
-        $str = mb_eregi_replace("<!doctype(.*?)>", '', $str);
-
+        $str = preg_replace("#<!doctype(.*?)>#i", '', $str);
         // strip out comments
-        $str = mb_eregi_replace("<!--(.*?)-->", '', $str);
-
+        $str = preg_replace("#<!--(.*?)-->#i", '', $str);
         // strip out cdata
-        $str = mb_eregi_replace("<!\[CDATA\[(.*?)\]\]>", '', $str);
-
+        $str = preg_replace("#<!\[CDATA\[(.*?)\]\]>#i", '', $str);
         // strip out <script> tags
         if ($this->options->get('removeScripts') == true) {
-            $str = mb_eregi_replace("<\s*script[^>]*[^/]>(.*?)<\s*/\s*script\s*>", '', $str);
-            $str = mb_eregi_replace("<\s*script\s*>(.*?)<\s*/\s*script\s*>", '', $str);
+            $str = preg_replace("#<\s*script[^>]*[^/]>(.*?)<\s*/\s*script\s*>#i", '', $str);
+            $str = preg_replace("#<\s*script\s*>(.*?)<\s*/\s*script\s*>#i", '', $str);
         }
-
         // strip out <style> tags
         if ($this->options->get('removeStyles') == true) {
-            $str = mb_eregi_replace("<\s*style[^>]*[^/]>(.*?)<\s*/\s*style\s*>", '', $str);
-            $str = mb_eregi_replace("<\s*style\s*>(.*?)<\s*/\s*style\s*>", '', $str);
+            $str = preg_replace("#<\s*style[^>]*[^/]>(.*?)<\s*/\s*style\s*>#", '', $str);
+            $str = preg_replace("#<\s*style\s*>(.*?)<\s*/\s*style\s*>#", '', $str);
         }
-
         // strip out server side scripts
-        $str = mb_eregi_replace("(<\?)(.*?)(\?>)", '', $str);
-
+        $str = preg_replace("#(<\?)(.*?)(\?>)#i", '', $str);
         // strip smarty scripts
-        $str = mb_eregi_replace("(\{\w)(.*?)(\})", '', $str);
-
+        $str = preg_replace("#(\{\w)(.*?)(\})#i", '', $str);
         return $str;
     }
 
@@ -450,7 +553,7 @@ class Dom
                 trim($str) != ''
             ) {
                 // we found text we care about
-                $textNode = new TextNode($str);
+                $textNode = new TextNode($str, $this->options->removeDoubleSpace);
                 $activeNode->addChild($textNode);
             }
         }
@@ -516,8 +619,8 @@ class Dom
             }
 
             if (empty($name)) {
-                $this->content->fastForward(1);
-                continue;
+				$this->content->skipByToken('blank');
+				continue;
             }
 
             $this->content->skipByToken('blank');
@@ -588,6 +691,13 @@ class Dom
 
             // We force self closing on this tag.
             $node->getTag()->selfClosing();
+
+            // Should this tag use a trailing slash?
+            if(in_array($tag, $this->noSlash))
+            {
+                $node->getTag()->noTrailingSlash();
+            }
+
         }
 
         $this->content->fastForward(1);

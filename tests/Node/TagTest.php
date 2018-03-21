@@ -1,8 +1,8 @@
 <?php
 
 use PHPHtmlParser\Dom\Tag;
-
-class NodeTagTest extends PHPUnit_Framework_TestCase {
+use PHPUnit\Framework\TestCase;
+class NodeTagTest extends TestCase {
 
     public function testSelfClosing()
     {
@@ -66,6 +66,30 @@ class NodeTagTest extends PHPUnit_Framework_TestCase {
         $tag = new Tag('a');
         $tag->setAttributes($attr);
         $this->assertEquals('funtimes', $tag->class['value']);
+    }
+
+    public function testUpdateAttributes()
+    {
+        $tag = new Tag('a');
+        $tag->setAttributes([
+            'href' => [
+                'value'       => 'http://google.com',
+                'doubleQuote' => false,
+            ],
+        ]);
+
+        $this->assertEquals(null, $tag->class['value']);
+        $this->assertEquals('http://google.com', $tag->href['value']);
+
+
+        $attr = [
+            'href'  => 'https://www.google.com',
+            'class' => 'funtimes',
+        ];
+
+        $tag->setAttributes($attr);
+        $this->assertEquals('funtimes', $tag->class['value']);
+        $this->assertEquals('https://www.google.com', $tag->href['value']);
     }
 
     public function testNoise()
@@ -152,5 +176,19 @@ class NodeTagTest extends PHPUnit_Framework_TestCase {
         $tag = new Tag('div');
         $tag->selfClosing();
         $this->assertEmpty($tag->makeClosingTag());
+    }
+
+    public function testSetTagAttribute()
+    {
+        $tag = new Tag('div');
+        $tag->setStyleAttributeValue('display', 'none');
+        $this->assertEquals('display:none;', $tag->getAttribute('style')['value']);
+    }
+
+    public function testGetStyleAttributesArray()
+    {
+        $tag = new Tag('div');
+        $tag->setStyleAttributeValue('display', 'none');
+        $this->assertInternalType('array', $tag->getStyleAttributeArray());
     }
 }
